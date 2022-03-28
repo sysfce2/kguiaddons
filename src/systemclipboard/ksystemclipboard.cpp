@@ -24,7 +24,7 @@ KSystemClipboard *KSystemClipboard::instance()
 #ifdef WITH_WAYLAND
     static bool s_waylandChecked = false;
     if (!systemClipboard && qGuiApp->platformName() == QLatin1String("wayland") && !s_waylandChecked) {
-        WaylandClipboard *waylandClipboard = new WaylandClipboard(qApp);
+        WaylandClipboard *waylandClipboard = new WaylandClipboard;
         s_waylandChecked = true;
 
         if (waylandClipboard->isValid()) {
@@ -37,7 +37,7 @@ KSystemClipboard *KSystemClipboard::instance()
 #endif
 
     if (!systemClipboard) {
-        systemClipboard = new QtClipboard(qApp);
+        systemClipboard = new QtClipboard;
     }
 
     return systemClipboard;

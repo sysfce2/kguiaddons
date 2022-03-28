@@ -12,7 +12,7 @@
 class QtClipboard : public KSystemClipboard
 {
 public:
-    explicit QtClipboard(QObject *parent);
+    explicit QtClipboard(QObject *parent = nullptr);
     void setMimeData(QMimeData *mime, QClipboard::Mode mode) override;
     void clear(QClipboard::Mode mode) override;
     const QMimeData *mimeData(QClipboard::Mode mode) const override;

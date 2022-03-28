@@ -7,6 +7,7 @@
 
 #include "waylandclipboard_p.h"
 
+#include <QAbstractEventDispatcher>
 #include <QBuffer>
 #include <QFile>
 #include <QGuiApplication>
@@ -14,6 +15,7 @@
 #include <QImageWriter>
 #include <QMimeData>
 #include <QPointer>
+#include <QThread>
 #include <QtWaylandClient/QWaylandClientExtension>
 #include <qpa/qplatformnativeinterface.h>
 #include <qtwaylandclientversion.h>
@@ -472,19 +474,33 @@ void DataControlDevice::setPrimarySelection(std::unique_ptr<DataControlSource> s
 WaylandClipboard::WaylandClipboard(QObject *parent)
     : KSystemClipboard(parent)
     , m_manager(new DataControlDeviceManager)
+    , m_eventQueue(nullptr, &wl_event_queue_destroy)
 {
-    connect(m_manager.get(), &DataControlDeviceManager::activeChanged, this, [this]() {
+    QPlatformNativeInterface *native = qApp->platformNativeInterface();
+    if (!native) {
+        return;
+    }
+
+    auto display = static_cast<wl_display *>(native->nativeResourceForIntegration("wl_display"));
+    if (!display) {
+        return;
+    }
+    m_eventQueue.reset(wl_display_create_queue(display));
+
+    connect(m_manager.get(), &DataControlDeviceManager::activeChanged, this, [this, native, display]() {
         if (m_manager->isActive()) {
-            QPlatformNativeInterface *native = qApp->platformNativeInterface();
-            if (!native) {
-                return;
-            }
             auto seat = static_cast<struct ::wl_seat *>(native->nativeResourceForIntegration("wl_seat"));
             if (!seat) {
                 return;
             }
 
+            wl_proxy_set_queue(reinterpret_cast<wl_proxy *>(m_manager->object()), m_eventQueue.get());
             m_device.reset(new DataControlDevice(m_manager->get_data_device(seat)));
+
+            auto eventDispatcher = QThread::currentThread()->eventDispatcher() ? QThread::currentThread()->eventDispatcher() : qGuiApp->eventDispatcher();
+            m_dispatchConnection = connect(eventDispatcher, &QAbstractEventDispatcher::aboutToBlock, this, [this, display] {
+                wl_display_dispatch_queue(display, m_eventQueue.get());
+            });
 
             connect(m_device.get(), &DataControlDevice::receivedSelectionChanged, this, [this]() {
                 // When our source is still valid, so the offer is for setting it or we emit changed when it is cancelled
@@ -505,8 +521,8 @@ WaylandClipboard::WaylandClipboard(QObject *parent)
             connect(m_device.get(), &DataControlDevice::primarySelectionChanged, this, [this]() {
                 Q_EMIT changed(QClipboard::Selection);
             });
-
         } else {
+            disconnect(m_dispatchConnection);
             m_device.reset();
         }
     });

@@ -57,7 +57,7 @@ Q_SIGNALS:
     void changed(QClipboard::Mode mode);
 
 protected:
-    KSystemClipboard(QObject *parent);
+    KSystemClipboard(QObject *parent = nullptr);
 };
 
 #endif

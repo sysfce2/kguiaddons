@@ -8,9 +8,10 @@
 #include <QDebug>
 #include <QGuiApplication>
 #include <QSharedPointer>
+#include <QWindow>
 #include <QtWaylandClient/QWaylandClientExtensionTemplate>
 #include <QtWaylandClient/QtWaylandClientVersion>
-#include <qpa/qplatformnativeinterface.h>
+#include <qpa/qplatformwindow_p.h>
 
 #include "qwayland-keyboard-shortcuts-inhibit-unstable-v1.h"
 
@@ -66,12 +67,15 @@ public:
         if (m_inhibitions.contains(window)) {
             return;
         }
-        QPlatformNativeInterface *nativeInterface = qGuiApp->platformNativeInterface();
-        if (!nativeInterface) {
+        auto waylandApp = qGuiApp->nativeInterface<QNativeInterface::QWaylandApplication>();
+        auto waylandWindow = window->nativeInterface<QNativeInterface::Private::QWaylandWindow>();
+        if (!waylandApp || !waylandWindow) {
             return;
         }
-        auto seat = static_cast<wl_seat *>(nativeInterface->nativeResourceForIntegration("wl_seat"));
-        auto surface = static_cast<wl_surface *>(nativeInterface->nativeResourceForWindow("surface", window));
+
+        auto seat = waylandApp->lastInputSeat();
+        auto surface = waylandWindow->surface();
+
         if (!seat || !surface) {
             return;
         }

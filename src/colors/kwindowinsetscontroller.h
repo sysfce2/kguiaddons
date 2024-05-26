@@ -27,7 +27,7 @@ class KGUIADDONS_EXPORT KWindowInsetsController : public QObject
 {
     Q_OBJECT
     /** Background color of the status bar. */
-    Q_PROPERTY(QColor statusBarBackgroundColor READ statusBarBackgroundColor WRITE setStatatusBarBackgroundColor NOTIFY statusBarBackgroundColorChanged)
+    Q_PROPERTY(QColor statusBarBackgroundColor READ statusBarBackgroundColor WRITE setStatusBarBackgroundColor NOTIFY statusBarBackgroundColorChanged)
     /** Background color of the navigation bar. */
     Q_PROPERTY(
         QColor navigationBarBackgroundColor READ navigationBarBackgroundColor WRITE setNavigationBarBackgroundColor NOTIFY navigationBarBackgroundColorChanged)
@@ -37,7 +37,7 @@ public:
     ~KWindowInsetsController();
 
     [[nodiscard]] QColor statusBarBackgroundColor() const;
-    void setStatatusBarBackgroundColor(const QColor &color);
+    void setStatusBarBackgroundColor(const QColor &color);
 
     [[nodiscard]] QColor navigationBarBackgroundColor() const;
     void setNavigationBarBackgroundColor(const QColor &color);
